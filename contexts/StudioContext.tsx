@@ -82,6 +82,8 @@ interface StudioContextValue {
   TL: Timeline;
   currentAyahs: Ayah[];
   loadingSurah: boolean;
+  recitationTotal: number;
+  setRecitationTotal: (n: number) => void;
   maxAyah: (n: number) => number;
   selectSurah: (n: number) => void;
   changeRange: (which: "from" | "to", delta: number) => void;
@@ -146,6 +148,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const [library, setLibrary] = useState<Video[]>([]);
   const [currentAyahs, setCurrentAyahs] = useState<Ayah[]>([]);
   const [loadingSurah, setLoadingSurah] = useState(true);
+  const [recitationTotal, setRecitationTotal] = useState(0);
   const [exportOpen, setExportOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const toastId = useRef(0);
@@ -384,6 +387,8 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     TL,
     currentAyahs,
     loadingSurah,
+    recitationTotal,
+    setRecitationTotal,
     maxAyah: maxAyahOf,
     selectSurah,
     changeRange,

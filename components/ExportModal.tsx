@@ -66,7 +66,7 @@ const ALL_PENDING: Record<StageId, StageStatus> = {
 };
 
 export function ExportModal() {
-  const { exportOpen, setExportOpen, S, TL, addToLibrary, toast, msg, t } = useStudio();
+  const { exportOpen, setExportOpen, S, TL, recitationTotal, addToLibrary, toast, msg, t } = useStudio();
 
   const [progress, setProgress] = useState(0);
   const [statuses, setStatuses] = useState<Record<StageId, StageStatus>>(ALL_PENDING);
@@ -79,8 +79,8 @@ export function ExportModal() {
   const intervals = useRef<ReturnType<typeof setInterval>[]>([]);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   /* latest context values for the async render finish payload */
-  const ctxRef = useRef({ S, TL, addToLibrary, toast, msg });
-  ctxRef.current = { S, TL, addToLibrary, toast, msg };
+  const ctxRef = useRef({ S, TL, recitationTotal, addToLibrary, toast, msg });
+  ctxRef.current = { S, TL, recitationTotal, addToLibrary, toast, msg };
 
   const clearAll = () => {
     intervals.current.forEach((i) => clearInterval(i));
@@ -106,7 +106,7 @@ export function ExportModal() {
 
     const finish = () => {
       setProgress(100);
-      const { S: cs, TL: ctl, addToLibrary: add, toast: tst, msg: m } = ctxRef.current;
+      const { S: cs, TL: ctl, recitationTotal: rt, addToLibrary: add, toast: tst, msg: m } = ctxRef.current;
       const s = getSurah(cs.surah);
       const name =
         "chromaquran-" + s.tr.toLowerCase().replace(/[^a-z]/g, "") + "-" + cs.from + "-" + cs.to + ".mp4";
@@ -118,7 +118,7 @@ export function ExportModal() {
         reciter: cs.reciter,
         font: cs.font,
         color: cs.color,
-        dur: Math.round(ctl.total),
+        dur: Math.round(rt || ctl.total),
         date: Date.now(),
         snippet: ctl.ayahs[0] ? ctl.ayahs[0].ar : "",
         name,
