@@ -186,6 +186,12 @@ export const RECITERS: Reciter[] = [
   { id: "husary", ar: "محمود خليل الحصري", en: "Mahmoud Al-Husary", style: "Precise tajwid · Egypt" },
   { id: "sudais", ar: "عبد الرحمن السديس", en: "Abdul Rahman Al-Sudais", style: "Haram imam · resonant" },
   { id: "ghamdi", ar: "سعد الغامدي", en: "Saad Al-Ghamdi", style: "Soft, flowing · Saudi" },
+  { id: "shuraim", ar: "سعود الشريم", en: "Saud Al-Shuraim", style: "Haram imam · solemn" },
+  { id: "basfar", ar: "عبد الله بصفر", en: "Abdullah Basfar", style: "Clear, teaching · Saudi" },
+  { id: "hudhaify", ar: "علي الحذيفي", en: "Ali Al-Hudhaify", style: "Measured · Madinah imam" },
+  { id: "ayyoub", ar: "محمد أيوب", en: "Muhammad Ayyoub", style: "Gentle · Madinah imam" },
+  { id: "qatami", ar: "ناصر القطامي", en: "Nasser Al-Qatami", style: "Emotive · Saudi" },
+  { id: "dossari", ar: "ياسر الدوسري", en: "Yasser Al-Dossari", style: "Moving · Haram imam" },
 ];
 
 /* ---------------- fonts (Google Fonts loaded in layout) ---------------- */
