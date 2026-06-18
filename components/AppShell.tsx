@@ -19,7 +19,13 @@ export function AppShell() {
         <Studio />
         <Library />
         <Account />
-        <div className="footnote">{t("footnote")}</div>
+        <div className="footnote">
+          {t("footnote")}
+          {" · "}
+          <a href="/about" style={{ color: "var(--faint)", textDecoration: "underline" }}>
+            {t("credits")}
+          </a>
+        </div>
       </div>
       <ExportModal />
       <Toaster />

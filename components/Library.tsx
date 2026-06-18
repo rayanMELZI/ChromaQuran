@@ -27,8 +27,20 @@ export function Library() {
     return msg(diff + " days ago", "قبل " + toArabicDigits(diff) + " يوم");
   };
 
-  const download = (v: Video) =>
-    toast(msg("Downloading ", "جارٍ تنزيل ") + v.name, "info");
+  const download = (v: Video) => {
+    if (v.url) {
+      const a = document.createElement("a");
+      a.href = v.url;
+      a.download = v.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      toast(msg("Downloading ", "جارٍ تنزيل ") + v.name, "info");
+    } else {
+      // seeded/legacy items have no rendered file — re-export from the Studio
+      toast(msg("Open in the Studio and export to download", "افتحه في الاستوديو وصدّره للتنزيل"), "info");
+    }
+  };
 
   return (
     <section className={"view" + (view === "library" ? " active" : "")} id="view-library">

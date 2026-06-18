@@ -64,9 +64,10 @@ export const I18N: Record<string, I18nEntry> = {
   storage: { en: "Library storage", ar: "مساحة المكتبة" },
   ofStorage: { en: "of 5 GB used", ar: "من 5 غيغابايت مستخدمة" },
   footnote: {
-    en: "Functional studio shell — render/export simulated, ready to wire to the encoding backend.",
-    ar: "واجهة استوديو وظيفية — المعالجة والتصدير محاكاة، جاهزة للربط بخادم الترميز.",
+    en: "ChromaQuran · a free Quran video studio — part of Wisdom From Quran",
+    ar: "كروما قرآن · استوديو فيديوهات قرآنية مجاني — من حكمة من القرآن",
   },
+  credits: { en: "About & credits", ar: "عن المشروع والمصادر" },
   exportTitle: { en: "Render & Export", ar: "المعالجة والتصدير" },
   sumPassage: { en: "Passage", ar: "المقطع" },
   sumReciter: { en: "Reciter", ar: "القارئ" },
