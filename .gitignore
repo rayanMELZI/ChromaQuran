@@ -13,6 +13,9 @@
 # rendered mp4 outputs (generated at runtime)
 /renders
 
+# local-only working notes (not published)
+/CLAUDE.md
+
 # misc
 .DS_Store
 *.pem
