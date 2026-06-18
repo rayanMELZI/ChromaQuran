@@ -36,6 +36,7 @@ export interface StudioState {
   trans: boolean;
   mark: boolean;
   head: boolean;
+  frameTag: boolean;
 }
 
 export interface Defaults {
@@ -93,7 +94,7 @@ interface StudioContextValue {
   setFont: (id: string) => void;
   setColor: (id: string) => void;
   setSize: (v: number) => void;
-  toggleOption: (key: "trans" | "mark" | "head", value: boolean) => void;
+  toggleOption: (key: "trans" | "mark" | "head" | "frameTag", value: boolean) => void;
   /* defaults */
   DEF: Defaults;
   saveDefaults: (patch: Partial<Defaults>) => void;
@@ -146,6 +147,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     trans: false,
     mark: true,
     head: true,
+    frameTag: false,
   });
   const [library, setLibrary] = useState<Video[]>([]);
   const [currentAyahs, setCurrentAyahs] = useState<Ayah[]>([]);
@@ -296,7 +298,7 @@ export function StudioProvider({ children }: { children: ReactNode }) {
   const setColor = useCallback((id: string) => setS((p) => ({ ...p, color: id })), []);
   const setSize = useCallback((v: number) => setS((p) => ({ ...p, size: v })), []);
   const toggleOption = useCallback(
-    (key: "trans" | "mark" | "head", value: boolean) =>
+    (key: "trans" | "mark" | "head" | "frameTag", value: boolean) =>
       setS((p) => ({ ...p, [key]: value })),
     []
   );

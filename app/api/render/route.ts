@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     trans: !!body.trans,
     mark: body.mark !== false,
     head: body.head !== false,
+    frameTag: !!body.frameTag,
   };
 
   const job = createJob(params, req.nextUrl.origin);

@@ -5,10 +5,11 @@ import { useStudio } from "@/contexts/StudioContext";
 export function OverlaysCard() {
   const { S, toggleOption, t } = useStudio();
 
-  const rows: { key: "trans" | "mark" | "head"; label: string; sub: string }[] = [
+  const rows: { key: "trans" | "mark" | "head" | "frameTag"; label: string; sub: string }[] = [
     { key: "trans", label: t("optTrans"), sub: t("optTransSub") },
     { key: "mark", label: t("optMark"), sub: t("optMarkSub") },
     { key: "head", label: t("optHead"), sub: t("optHeadSub") },
+    { key: "frameTag", label: t("optFrame"), sub: t("optFrameSub") },
   ];
 
   return (

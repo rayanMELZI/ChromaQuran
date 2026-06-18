@@ -49,6 +49,7 @@ export default async function RenderPage({ searchParams }: { searchParams: Promi
       trans={flag("trans", false)}
       mark={flag("mark", true)}
       head={flag("head", true)}
+      frameTag={flag("frameTag", false)}
     />
   );
 }

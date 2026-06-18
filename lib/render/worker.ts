@@ -28,6 +28,7 @@ export interface RenderParams {
   trans: boolean;
   mark: boolean;
   head: boolean;
+  frameTag: boolean;
 }
 
 export type ProgressFn = (percent: number, stage?: string) => void;
@@ -95,6 +96,7 @@ export async function renderJob(
           q("trans", p.trans ? 1 : 0),
           q("mark", p.mark ? 1 : 0),
           q("head", p.head ? 1 : 0),
+          q("frameTag", p.frameTag ? 1 : 0),
         ].join("&");
       await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
       await page.waitForSelector('html[data-render-ready="1"]', { timeout: 15000 }).catch(() => {});

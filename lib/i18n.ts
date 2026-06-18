@@ -35,6 +35,8 @@ export const I18N: Record<string, I18nEntry> = {
   optMarkSub: { en: "۝ ayah ornament after each verse", ar: "زخرفة ۝ بعد كل آية" },
   optHead: { en: "Surah name header", ar: "اسم السورة في الأعلى" },
   optHeadSub: { en: "name & emblem at the top", ar: "الاسم والشعار في الأعلى" },
+  optFrame: { en: "Recording tag", ar: "شارة التسجيل" },
+  optFrameSub: { en: "1080×1920 · 9:16 marker, top-left corner", ar: "علامة 1080×1920 · 9:16 في الزاوية" },
   renderBtn: { en: "Render & Export Video", ar: "معالجة وتصدير الفيديو" },
   libTitle: { en: "Your Library", ar: "مكتبتك" },
   libSub: { en: "videos created · reusable in Auto Quran", ar: "فيديو · قابلة للاستخدام في أوتو قرآن" },

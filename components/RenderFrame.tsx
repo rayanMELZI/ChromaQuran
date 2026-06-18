@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import type { Ayah } from "@/lib/quran-data";
-import { Composition } from "./Composition";
+import { Composition, FrameTag } from "./Composition";
 
 /** Full-bleed 1080×1920 composition for the render worker to screenshot.
  * Sets data-render-ready="1" on <html> once fonts are loaded + painted, so
@@ -16,6 +16,7 @@ export function RenderFrame(props: {
   trans: boolean;
   mark: boolean;
   head: boolean;
+  frameTag: boolean;
 }) {
   useEffect(() => {
     let done = false;
@@ -33,6 +34,7 @@ export function RenderFrame(props: {
 
   return (
     <div className="render-stage">
+      {props.frameTag ? <FrameTag /> : null}
       <Composition
         surahName={props.surahName}
         ayah={props.ayah}

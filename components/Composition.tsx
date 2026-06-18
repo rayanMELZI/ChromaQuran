@@ -15,6 +15,17 @@ export function AyahMark({ n }: { n: number }) {
   );
 }
 
+/** The "REC" frame tag (red dot + "1080×1920 · 9:16"), shown top-left. Optional overlay
+ * that can be burned into the exported video; sizes in cqw so it scales preview→export. */
+export function FrameTag() {
+  return (
+    <div className="frame-tag">
+      <span className="rec" />
+      <span>1080×1920 · 9:16</span>
+    </div>
+  );
+}
+
 /** The black-canvas verse composition (`.comp`). Shared by the live Studio preview
  * and the /render page, so exported video frames are pixel-identical to the preview.
  * The caller supplies the container (`.canvas` in the Studio, `.render-stage` for export). */

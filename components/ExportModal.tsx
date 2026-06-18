@@ -50,7 +50,7 @@ export function ExportModal() {
     const params = {
       surah: cs.surah, from: cs.from, to: cs.to, reciter: cs.reciter,
       font: cs.font, color: cs.color, size: cs.size,
-      trans: cs.trans, mark: cs.mark, head: cs.head,
+      trans: cs.trans, mark: cs.mark, head: cs.head, frameTag: cs.frameTag,
     };
 
     const fail = (m: string) => {

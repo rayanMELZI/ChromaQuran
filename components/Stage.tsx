@@ -6,7 +6,7 @@ import { surah as getSurah, colorVal, fontFam, toArabicDigits } from "@/lib/qura
 import { ayahAudioUrl } from "@/lib/audio";
 import { ayahDur } from "@/lib/timeline";
 import { fmtTime, clamp } from "@/lib/util";
-import { Composition } from "./Composition";
+import { Composition, FrameTag } from "./Composition";
 
 export function Stage() {
   const { S, TL, lang, msg, loadingSurah, pauseRef, setRecitationTotal } = useStudio();
@@ -278,10 +278,7 @@ export function Stage() {
     <div className="stage-col">
       <div className="stage-wrap">
         <div className={"canvas" + (playing ? " playing" : "")}>
-          <div className="frame-tag">
-            <span className="rec" />
-            <span>1080×1920 · 9:16</span>
-          </div>
+          {S.frameTag ? <FrameTag /> : null}
           <Composition
             surahName={s.ar}
             ayah={a}
