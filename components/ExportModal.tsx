@@ -226,20 +226,22 @@ export function ExportModal() {
           </div>
         </div>
         <div className={"exp-actions" + (done ? " show" : "")}>
-          <a className="btn btn-green" href={downloadUrl || "#"} download={doneName}>
+          <a className="btn btn-green exp-primary" href={downloadUrl || "#"} download={doneName}>
             <svg viewBox="0 0 24 24" fill="none">
               <path d="M12 4v10m0 0 4-4m-4 4-4-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
               <path d="M5 19h14" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
             </svg>
             <span>{t("doDownload")}</span>
           </a>
-          <button className="btn btn-gold" onClick={onSendAuto}>
-            <svg viewBox="0 0 24 24" fill="none">
-              <path d="M4 12a8 8 0 0 1 13.7-5.6M20 12A8 8 0 0 1 6.3 17.6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-              <path d="M18 3v3.4h-3.4M6 21v-3.4h3.4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span>{t("doSendAuto")}</span>
-          </button>
+          <div className="exp-secondary">
+            <button className="btn btn-gold" onClick={onSendAuto}>
+              <svg viewBox="0 0 24 24" fill="none">
+                <path d="M4 12a8 8 0 0 1 13.7-5.6M20 12A8 8 0 0 1 6.3 17.6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                <path d="M18 3v3.4h-3.4M6 21v-3.4h3.4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span>{t("doSendAuto")}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
