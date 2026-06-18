@@ -487,3 +487,6 @@ input[type=range].slider::-moz-range-thumb{width:18px; height:18px; border:none;
 .toast.warn .tic{color:#e8c07a;}
 
 .footnote{margin-top:30px; text-align:center; color:var(--faint); font-size:12px;}
+
+/* ---------- offscreen render stage (Playwright rasterizes this at 1080×1920 for export) ---------- */
+.render-stage{position:relative; width:1080px; height:1920px; background:#000; overflow:hidden; container-type:size;}

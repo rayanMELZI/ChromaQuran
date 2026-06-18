@@ -56,6 +56,8 @@ export interface Video {
   date: number;
   snippet: string;
   name: string;
+  /** server download URL of the rendered MP4 (present for real exports) */
+  url?: string;
 }
 
 export type ToastKind = "ok" | "info" | "warn" | "";

@@ -1,23 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useStudio } from "@/contexts/StudioContext";
 import { surah as getSurah, colorVal, fontFam, toArabicDigits } from "@/lib/quran-data";
 import { ayahAudioUrl } from "@/lib/audio";
 import { ayahDur } from "@/lib/timeline";
 import { fmtTime, clamp } from "@/lib/util";
-
-function AyahMark({ n }: { n: number }) {
-  return (
-    <span className="ayah-mark">
-      <svg viewBox="0 0 24 24" fill="none">
-        <rect x="4.6" y="4.6" width="14.8" height="14.8" rx="2.6" stroke="currentColor" strokeWidth="1.25" />
-        <rect x="4.6" y="4.6" width="14.8" height="14.8" rx="2.6" stroke="currentColor" strokeWidth="1.25" transform="rotate(45 12 12)" />
-      </svg>
-      <span className="num">{toArabicDigits(n)}</span>
-    </span>
-  );
-}
+import { Composition } from "./Composition";
 
 export function Stage() {
   const { S, TL, lang, msg, loadingSurah, pauseRef, setRecitationTotal } = useStudio();
@@ -271,11 +260,6 @@ export function Stage() {
   const s = getSurah(S.surah);
   const a = TL.ayahs[displayIdx];
   const counterAyah = TL.ayahs[idx];
-  const compStyle = { ["--vcolor" as string]: colorVal(S.color) } as CSSProperties;
-  const verseStyle = {
-    ["--vfont" as string]: fontFam(S.font),
-    ["--vsize" as string]: S.size + "cqw",
-  } as CSSProperties;
 
   let counter = "";
   if (counterAyah) {
@@ -298,52 +282,18 @@ export function Stage() {
             <span className="rec" />
             <span>1080×1920 · 9:16</span>
           </div>
-          <div className="comp" style={compStyle}>
-            <div className={"comp-head" + (S.head ? " show" : "")} style={{ display: S.head ? undefined : "none" }}>
-              <div className="ornament">
-                <span className="ln" />
-                <svg className="star" viewBox="0 0 24 24" fill="none">
-                  <rect x="5.2" y="5.2" width="13.6" height="13.6" rx="2.4" stroke="currentColor" strokeWidth="1.5" />
-                  <rect x="5.2" y="5.2" width="13.6" height="13.6" rx="2.4" stroke="currentColor" strokeWidth="1.5" transform="rotate(45 12 12)" />
-                </svg>
-                <span className="ln r" />
-              </div>
-              <div className="sname">{s.ar}</div>
-            </div>
-
-            <div className="comp-body">
-              <div className={"verse" + (swapping ? " swap" : "")} style={verseStyle}>
-                {a ? (
-                  <>
-                    {a.ar}
-                    {S.mark ? (
-                      <>
-                        {" "}
-                        <AyahMark n={a.n} />
-                      </>
-                    ) : null}
-                  </>
-                ) : loadingSurah ? (
-                  msg("Loading…", "جارٍ التحميل…")
-                ) : null}
-              </div>
-              <div
-                className={"translation" + (swapping ? " swap" : "")}
-                style={{ display: S.trans && a ? undefined : "none" }}
-              >
-                {S.trans && a ? a.en : ""}
-              </div>
-            </div>
-
-            <div className="comp-foot">
-              <svg className="wm-mark" viewBox="0 0 24 24" fill="none">
-                <rect x="5.2" y="5.2" width="13.6" height="13.6" rx="2.4" stroke="#dcc29c" strokeWidth="1.5" />
-                <rect x="5.2" y="5.2" width="13.6" height="13.6" rx="2.4" stroke="#dcc29c" strokeWidth="1.5" transform="rotate(45 12 12)" />
-                <circle cx="12" cy="12" r="2" fill="#69c0e6" />
-              </svg>
-              <span className="wm-id">@wisdomfrom.quran</span>
-            </div>
-          </div>
+          <Composition
+            surahName={s.ar}
+            ayah={a}
+            fontFamily={fontFam(S.font)}
+            colorValue={colorVal(S.color)}
+            size={S.size}
+            trans={S.trans}
+            mark={S.mark}
+            head={S.head}
+            swapping={swapping}
+            loadingText={loadingSurah && !a ? msg("Loading…", "جارٍ التحميل…") : undefined}
+          />
         </div>
       </div>
 
