@@ -24,6 +24,7 @@ export function ExportModal() {
   const [errMsg, setErrMsg] = useState("");
   const [doneName, setDoneName] = useState("video.mp4");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
   const lastVideoRef = useRef<Video | null>(null);
 
   const rendering = status === "queued" || status === "running";
@@ -146,6 +147,36 @@ export function ExportModal() {
     return "";
   };
 
+  const onShareInstagram = async () => {
+    const v = lastVideoRef.current;
+    const m = v?.url?.match(/render\/(job_[a-z0-9]+)\/file/i);
+    const jobId = m?.[1];
+    if (!v || !jobId) return;
+    const sName = getSurah(v.surah);
+    const caption = `${sName.ar} (${sName.tr}) ${v.from}-${v.to}\n${reciterObj(v.reciter).en}\n\n#Quran #القرآن #تلاوة`;
+    setSharing(true);
+    toast(msg("Sharing to Instagram…", "جارٍ النشر على إنستغرام…"), "info");
+    try {
+      const r = await fetch("/api/share", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId, caption }),
+      });
+      const data = await r.json();
+      if (r.ok && data.ok) toast(msg("Posted to Instagram", "تم النشر على إنستغرام"), "ok");
+      else
+        toast(
+          msg("Instagram share failed", "تعذّر النشر على إنستغرام") +
+            (data?.error ? ` — ${String(data.error).slice(0, 100)}` : ""),
+          "warn"
+        );
+    } catch {
+      toast(msg("Instagram share failed", "تعذّر النشر على إنستغرام"), "warn");
+    } finally {
+      setSharing(false);
+    }
+  };
+
   const onSendAuto = () => {
     if (lastVideoRef.current) {
       try {
@@ -234,6 +265,14 @@ export function ExportModal() {
             <span>{t("doDownload")}</span>
           </a>
           <div className="exp-secondary">
+            <button className="btn btn-ig" onClick={onShareInstagram} disabled={sharing}>
+              <svg viewBox="0 0 24 24" fill="none">
+                <rect x="4" y="4" width="16" height="16" rx="5" stroke="currentColor" strokeWidth="1.7" />
+                <circle cx="12" cy="12" r="3.6" stroke="currentColor" strokeWidth="1.7" />
+                <circle cx="17.2" cy="6.8" r="1.15" fill="currentColor" />
+              </svg>
+              <span>{sharing ? t("sharing") : t("shareIg")}</span>
+            </button>
             <button className="btn btn-gold" onClick={onSendAuto}>
               <svg viewBox="0 0 24 24" fill="none">
                 <path d="M4 12a8 8 0 0 1 13.7-5.6M20 12A8 8 0 0 1 6.3 17.6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />

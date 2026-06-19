@@ -83,6 +83,8 @@ export const I18N: Record<string, I18nEntry> = {
   doneReady: { en: "ready & saved to your library", ar: "جاهز ومحفوظ في مكتبتك" },
   doDownload: { en: "Download .mp4", ar: "تنزيل .mp4" },
   doSendAuto: { en: "Send to Auto Quran", ar: "إرسال إلى أوتو قرآن" },
+  shareIg: { en: "Share on Instagram", ar: "نشر على إنستغرام" },
+  sharing: { en: "Sharing…", ar: "جارٍ النشر…" },
 };
 
 export function t(key: string, lang: Lang): string {

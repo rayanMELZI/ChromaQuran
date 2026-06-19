@@ -69,6 +69,9 @@ h1,h2,h3,h4{font-family:"El Messiri"; font-weight:600; margin:0; line-height:1.2
 .btn-green{color:#04140d; background:linear-gradient(135deg,#8fe0bd,var(--green) 60%,#3fa67f);
   box-shadow:0 12px 28px -14px rgba(95,202,160,.5), inset 0 1px 0 rgba(255,255,255,.35);}
 .btn-green:hover{transform:translateY(-2px);}
+.btn-ig{color:#fff; background:linear-gradient(135deg,#feda75,#fa7e1e 28%,#d62976 58%,#962fbf 80%,#4f5bd5);
+  box-shadow:0 12px 28px -14px rgba(214,41,118,.6), inset 0 1px 0 rgba(255,255,255,.35);}
+.btn-ig:hover{transform:translateY(-2px); box-shadow:0 18px 38px -14px rgba(214,41,118,.66);}
 .btn[disabled]{opacity:.4; cursor:not-allowed; transform:none; box-shadow:none;}
 .btn-sm{padding:7px 14px; font-size:12.5px;}
 .btn-block{width:100%;}
