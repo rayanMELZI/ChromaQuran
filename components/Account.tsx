@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useStudio } from "@/contexts/StudioContext";
 import { RECITERS, FONTS, COLORS } from "@/lib/quran-data";
 import { clamp } from "@/lib/util";
@@ -24,6 +24,27 @@ export function Account() {
   const gb = library.length * 0.038;
   const usageStyle = { width: clamp((gb / 5) * 100, 2, 100) + "%" } as CSSProperties;
 
+  const onSignOut = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {}
+    window.location.href = "/login";
+  };
+
+  const [me, setMe] = useState<{ name: string; email: string } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!cancelled && d?.user) setMe(d.user);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <section className={"view" + (view === "account" ? " active" : "")} id="view-account">
       <div className="view-head">
@@ -41,8 +62,8 @@ export function Account() {
                 <Emblem />
               </span>
               <div>
-                <div className="ai-name">Wisdom From Quran</div>
-                <div className="ai-mail">team@wisdomfromquran.app</div>
+                <div className="ai-name">{me ? me.name : "…"}</div>
+                <div className="ai-mail">{me ? me.email : ""}</div>
                 <span className="ai-plan">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
                     <path d="m12 3 2.5 5.5L20 9l-4 4 1 6-5-2.8L7 19l1-6-4-4 5.5-.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
@@ -50,6 +71,13 @@ export function Account() {
                   <span>{t("planLabel")}</span>
                 </span>
               </div>
+              <button className="btn btn-ghost btn-sm" style={{ marginInlineStart: "auto" }} onClick={onSignOut}>
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path d="M15 12H4m0 0 3.5-3.5M4 12l3.5 3.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M10 4h7a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>{t("signOut")}</span>
+              </button>
             </div>
             <div className="divider" style={{ margin: "18px 0 16px" }} />
             <div className="section-label" style={{ marginBottom: "12px" }}>
