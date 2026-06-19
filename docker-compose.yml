@@ -1,0 +1,24 @@
+# Postgres for ChromaQuran (and shared with Auto Quran — both apps connect to this DB
+# so accounts are shared). Run:  docker compose up -d
+# Then set DATABASE_URL=postgres://chromaquran:chromaquran@localhost:5432/chromaquran
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: chromaquran-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: chromaquran
+      POSTGRES_PASSWORD: chromaquran
+      POSTGRES_DB: chromaquran
+    ports:
+      - "5432:5432"
+    volumes:
+      - cq_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chromaquran"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  cq_pgdata:
