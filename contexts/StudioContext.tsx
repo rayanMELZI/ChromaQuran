@@ -226,25 +226,25 @@ export function StudioProvider({ children }: { children: ReactNode }) {
       color: def.color || prev.color,
     }));
 
-    let lib: Video[] | null = null;
-    try {
-      lib = JSON.parse(localStorage.getItem("cq_library") || "null");
-    } catch {
-      lib = null;
-    }
-    if (!lib) {
-      lib = seedLibrary();
-      try {
-        localStorage.setItem("cq_library", JSON.stringify(lib));
-      } catch {}
-    }
-    setLibrary(lib);
-
     toast(
       msgRaw("Studio ready — Al-Fatihah loaded", "الاستوديو جاهز — حُمّلت الفاتحة", storedLang),
       "ok"
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* load this user's library from the server (per-user, DB-backed) */
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/library")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data && Array.isArray(data.videos)) setLibrary(data.videos);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   /* reflect lang on <html> */
@@ -314,32 +314,34 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  /* ---------------- library ---------------- */
-  const persistLib = useCallback((lib: Video[]) => {
-    try {
-      localStorage.setItem("cq_library", JSON.stringify(lib));
-    } catch {}
-  }, []);
+  /* ---------------- library (per-user, DB-backed via /api/library) ---------------- */
   const addToLibrary = useCallback(
     (v: Video) => {
-      setLibrary((prev) => {
-        const next = [v, ...prev];
-        persistLib(next);
-        return next;
-      });
+      /* Persist server-side; the DB assigns the real id/date. Show the client's
+       * optimistic row immediately, then reconcile with the saved row. */
+      setLibrary((prev) => [v, ...prev]);
+      fetch("/api/library", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(v),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data && data.video) {
+            setLibrary((prev) => prev.map((x) => (x.id === v.id ? data.video : x)));
+          }
+        })
+        .catch(() => {});
     },
-    [persistLib]
+    []
   );
   const deleteVideo = useCallback(
     (id: string) => {
-      setLibrary((prev) => {
-        const next = prev.filter((x) => x.id !== id);
-        persistLib(next);
-        return next;
-      });
+      setLibrary((prev) => prev.filter((x) => x.id !== id));
+      fetch(`/api/library/${id}`, { method: "DELETE" }).catch(() => {});
       toast(msg("Removed from library", "حُذف من المكتبة"), "warn");
     },
-    [persistLib, toast, msg]
+    [toast, msg]
   );
   const sendToAuto = useCallback(
     (v: Video) => {
@@ -432,41 +434,4 @@ function getReciterEn(id: string): string {
     ghamdi: "Saad Al-Ghamdi",
   };
   return map[id] || id;
-}
-
-/* ---------------- seed library (4 sample reels on first run) ---------------- */
-function seedLibrary(): Video[] {
-  const now = Date.now();
-  const day = 86400000;
-  function mk(
-    n: number,
-    from: number,
-    to: number,
-    rec: string,
-    font: string,
-    color: string,
-    dur: number,
-    snippet: string,
-    ago: number
-  ): Video {
-    return {
-      id: "seed" + n + from,
-      surah: n,
-      from,
-      to,
-      reciter: rec,
-      font,
-      color,
-      dur,
-      date: now - ago * day,
-      snippet,
-      name: "chromaquran-" + getSurah(n).tr.toLowerCase().replace(/[^a-z]/g, "") + "-" + from + "-" + to + ".mp4",
-    };
-  }
-  return [
-    mk(112, 1, 4, "alafasy", "amiri", "warm", 13, "قُلْ هُوَ ٱللَّهُ أَحَدٌ", 1),
-    mk(103, 1, 3, "abdulbasit", "scheherazade", "gold", 18, "وَٱلْعَصْرِ", 3),
-    mk(55, 1, 8, "muaiqly", "kufi", "cyan", 27, "ٱلرَّحْمَٰنُ", 6),
-    mk(114, 1, 6, "ghamdi", "noto", "warm", 22, "قُلْ أَعُوذُ بِرَبِّ ٱلنَّاسِ", 9),
-  ];
 }
