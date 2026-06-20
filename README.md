@@ -50,6 +50,16 @@ server {
 }
 ```
 
+### Auth & database
+- Accounts live in **Postgres**. Start it with `docker compose up -d`, then set `DATABASE_URL` (see `.env.example`)
+  and a strong `AUTH_JWT_SECRET`. The `users` table is created automatically on first use.
+- The app is **gated by login** (middleware). `/login` supports **sign up** and **sign in**. Sessions are a signed
+  JWT in a **host-only** cookie (`wfq_session`) — deliberately NOT a `.rayanemelzi.dev` cookie, which would leak the
+  session to every other project on that domain.
+- **Sharing accounts with Auto Quran:** point Auto Quran at the **same** `DATABASE_URL` + `AUTH_JWT_SECRET`. It then
+  shares the same accounts (bcrypt hashes are cross-language) and can verify the `wfq_session` JWT (HS256). Same
+  email/password works on both apps. (True one-click SSO across the two would need a central `auth.` service — not done.)
+
 ### Render notes
 - Rendered MP4s are written to `renders/` (gitignored) and streamed via `/api/render/[id]/file`.
 - Concurrency is limited so renders don't overwhelm the box. Tune with `CQ_RENDER_CONCURRENCY` (default `1`).
@@ -57,10 +67,12 @@ server {
   Redis/BullMQ queue (the API and UI don't change).
 - Add a cron/job to prune old files in `renders/`.
 
-## Not yet wired (next phases)
-- **Auth** (shared SSO with the Auto Quran app, under `*.rayanemelzi.dev`) — the app is currently anonymous; the
-  Library is per-browser (`localStorage`) until auth lands.
-- **"Send to Auto Quran"** currently writes a `localStorage` handoff; wire it to the Auto Quran service.
+## Not yet wired (next)
+- **Per-user library** — the Library is still per-browser (`localStorage`); move it into Postgres keyed by the user.
+- **"Send to Auto Quran"** still writes a `localStorage` handoff; wire it to the real Auto Quran service.
+- **True single sign-on** (log in once for both apps) — optional; needs a central `auth.rayanemelzi.dev`. Today both
+  apps share the same accounts (one DB) but you log into each separately.
+- Render housekeeping: prune old `renders/` files; optionally self-host the render fonts.
 
 ## Credits
 Quran text: Tanzil (via alquran.cloud). Translation: Saheeh International. Recitations: everyayah.com. Fonts: SIL
