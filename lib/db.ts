@@ -14,10 +14,12 @@ export function getPool(): Pool {
 
 let schemaReady: Promise<void> | null = null;
 
-/** Idempotently create the tables we need. Runs once per process. */
+/** Idempotently create the tables we need. Runs once per process.
+ * `videos` references `users`, so it must be created after it. */
 export function ensureSchema(): Promise<void> {
   if (!schemaReady) {
-    schemaReady = getPool()
+    const pool = getPool();
+    schemaReady = pool
       .query(
         `CREATE TABLE IF NOT EXISTS users (
           id BIGSERIAL PRIMARY KEY,
@@ -27,6 +29,32 @@ export function ensureSchema(): Promise<void> {
           role TEXT NOT NULL DEFAULT 'user',
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )`
+      )
+      .then(() =>
+        pool.query(
+          // `from`/`to` are SQL reserved words → store as from_ayah/to_ayah.
+          `CREATE TABLE IF NOT EXISTS videos (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            surah INT NOT NULL,
+            from_ayah INT NOT NULL,
+            to_ayah INT NOT NULL,
+            reciter TEXT NOT NULL,
+            font TEXT NOT NULL,
+            color TEXT NOT NULL,
+            dur INT NOT NULL,
+            snippet TEXT NOT NULL DEFAULT '',
+            name TEXT NOT NULL,
+            url TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          )`
+        )
+      )
+      .then(() =>
+        pool.query(
+          `CREATE INDEX IF NOT EXISTS videos_user_created_idx
+             ON videos (user_id, created_at DESC)`
+        )
       )
       .then(() => undefined)
       .catch((e) => {
