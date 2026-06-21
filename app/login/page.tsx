@@ -1,12 +1,10 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { Background } from "@/components/Background";
 import { Emblem } from "@/components/Emblem";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -27,9 +25,10 @@ export default function LoginPage() {
         body: JSON.stringify(payload),
       });
       if (r.ok) {
+        // Hard navigation (not router.replace) so the whole app — incl. StudioProvider —
+        // remounts with the new session and re-fetches this user's library + settings.
         const next = new URLSearchParams(window.location.search).get("next");
-        router.replace(next && next.startsWith("/") ? next : "/");
-        router.refresh();
+        window.location.href = next && next.startsWith("/") ? next : "/";
       } else {
         const d = await r.json().catch(() => ({}));
         setError(d.error || "Something went wrong");
