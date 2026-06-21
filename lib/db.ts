@@ -56,6 +56,19 @@ export function ensureSchema(): Promise<void> {
              ON videos (user_id, created_at DESC)`
         )
       )
+      .then(() =>
+        pool.query(
+          // One row per user: their saved Studio defaults + UI language.
+          `CREATE TABLE IF NOT EXISTS user_settings (
+            user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+            reciter TEXT,
+            font TEXT,
+            color TEXT,
+            lang TEXT,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          )`
+        )
+      )
       .then(() => undefined)
       .catch((e) => {
         schemaReady = null; // allow retry on next call
