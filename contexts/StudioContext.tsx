@@ -201,35 +201,37 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => [...prev, { id, message, kind }]);
   }, []);
 
-  /* ---------------- boot: hydrate from localStorage (client only) ---------------- */
+  /* ---------------- boot: load this user's settings (per-user, DB-backed) ---------------- */
   useEffect(() => {
     if (booted.current) return;
     booted.current = true;
 
-    let storedLang: Lang = "en";
-    try {
-      const l = localStorage.getItem("cq_lang");
-      if (l === "en" || l === "ar") storedLang = l;
-    } catch {}
-    setLangState(storedLang);
-
-    let def = DEFAULTS;
-    try {
-      const d = JSON.parse(localStorage.getItem("cq_defaults") || "null");
-      if (d) def = { ...DEFAULTS, ...d };
-    } catch {}
-    setDEF(def);
-    setS((prev) => ({
-      ...prev,
-      reciter: def.reciter || prev.reciter,
-      font: def.font || prev.font,
-      color: def.color || prev.color,
-    }));
-
-    toast(
-      msgRaw("Studio ready — Al-Fatihah loaded", "الاستوديو جاهز — حُمّلت الفاتحة", storedLang),
-      "ok"
-    );
+    let cancelled = false;
+    fetch("/api/settings")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled) return;
+        const s = (data && data.settings) || {};
+        const def: Defaults = {
+          reciter: s.reciter || DEFAULTS.reciter,
+          font: s.font || DEFAULTS.font,
+          color: s.color || DEFAULTS.color,
+        };
+        const lng: Lang = s.lang === "ar" ? "ar" : "en";
+        setLangState(lng);
+        setDEF(def);
+        setS((prev) => ({ ...prev, reciter: def.reciter, font: def.font, color: def.color }));
+        toast(
+          msgRaw("Studio ready — Al-Fatihah loaded", "الاستوديو جاهز — حُمّلت الفاتحة", lng),
+          "ok"
+        );
+      })
+      .catch(() => {
+        if (!cancelled) toast(msgRaw("Studio ready — Al-Fatihah loaded", "", "en"), "ok");
+      });
+    return () => {
+      cancelled = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -252,12 +254,14 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = lang;
   }, [lang]);
 
-  /* ---------------- language ---------------- */
+  /* ---------------- language (persisted per-user) ---------------- */
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
-    try {
-      localStorage.setItem("cq_lang", l);
-    } catch {}
+    fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lang: l }),
+    }).catch(() => {});
   }, []);
 
   /* ---------------- view ---------------- */
@@ -303,15 +307,14 @@ export function StudioProvider({ children }: { children: ReactNode }) {
     []
   );
 
-  /* ---------------- defaults ---------------- */
+  /* ---------------- defaults (persisted per-user) ---------------- */
   const saveDefaults = useCallback((patch: Partial<Defaults>) => {
-    setDEF((prev) => {
-      const next = { ...prev, ...patch };
-      try {
-        localStorage.setItem("cq_defaults", JSON.stringify(next));
-      } catch {}
-      return next;
-    });
+    setDEF((prev) => ({ ...prev, ...patch }));
+    fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(patch),
+    }).catch(() => {});
   }, []);
 
   /* ---------------- library (per-user, DB-backed via /api/library) ---------------- */
