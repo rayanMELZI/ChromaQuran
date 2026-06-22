@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type CSSProperties } from "react";
 import { useStudio } from "@/contexts/StudioContext";
-import { RECITERS, FONTS, COLORS } from "@/lib/quran-data";
+import { RECITERS, FONTS, COLORS, SURAHS, surah as getSurah } from "@/lib/quran-data";
 import { clamp } from "@/lib/util";
 
 interface AutomationData {
@@ -31,6 +31,9 @@ export function Automation() {
   const [data, setData] = useState<AutomationData | null>(null);
   const [saving, setSaving] = useState(false);
   const [running, setRunning] = useState(false);
+  // "Set next passage" editor — start the next post at a chosen surah/ayah.
+  const [editSurah, setEditSurah] = useState(1);
+  const [editAyah, setEditAyah] = useState(1);
 
   const load = useCallback(() => {
     fetch("/api/automation")
@@ -47,6 +50,14 @@ export function Automation() {
   useEffect(() => {
     if (view === "automation") load();
   }, [view, load]);
+
+  // Keep the editor in sync with the stored cursor (only changes on load / after a Set).
+  useEffect(() => {
+    if (data) {
+      setEditSurah(data.cursorSurah);
+      setEditAyah(data.cursorAyah);
+    }
+  }, [data]);
 
   const patch = async (body: Record<string, unknown>, okMsg?: string) => {
     setSaving(true);
@@ -302,6 +313,66 @@ export function Automation() {
               {a.lastMessage ? (
                 <div style={{ fontSize: 12, color: "var(--faint)", marginTop: 6 }}>{a.lastMessage}</div>
               ) : null}
+            </section>
+
+            {/* Set next passage (move the cursor) */}
+            <section className="card glass">
+              <div className="card-head">
+                <h3>
+                  <span className="ic">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                      <path d="M5 12h14m0 0-5-5m5 5-5 5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </span>
+                  <span>{msg("Set the next passage", "تحديد المقطع التالي")}</span>
+                </h3>
+              </div>
+              <div className="pref-row">
+                <div className="pr-l">
+                  <span>{t("surahLabel")}</span>
+                </div>
+                <select
+                  className="field"
+                  value={editSurah}
+                  onChange={(e) => {
+                    const n = parseInt(e.target.value, 10);
+                    setEditSurah(n);
+                    setEditAyah((prev) => clamp(prev, 1, getSurah(n).ayahs));
+                  }}
+                >
+                  {SURAHS.map((s) => (
+                    <option key={s.n} value={s.n}>
+                      {s.n}. {s.ar} — {s.tr}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="pref-row">
+                <div className="pr-l">
+                  <span>{msg("Start at ayah", "ابدأ من الآية")}</span>
+                  <span className="sub">{msg("of " + getSurah(editSurah).ayahs, "من أصل " + getSurah(editSurah).ayahs)}</span>
+                </div>
+                <input
+                  className="field"
+                  type="number"
+                  min={1}
+                  max={getSurah(editSurah).ayahs}
+                  value={editAyah}
+                  onChange={(e) => setEditAyah(clamp(parseInt(e.target.value, 10) || 1, 1, getSurah(editSurah).ayahs))}
+                />
+              </div>
+              <button
+                className="btn btn-cyan btn-block"
+                disabled={saving || (data?.cursorSurah === editSurah && data?.cursorAyah === editAyah)}
+                onClick={() =>
+                  patch(
+                    { cursorSurah: editSurah, cursorAyah: editAyah },
+                    msg("Next passage updated", "تم تحديث المقطع التالي")
+                  )
+                }
+              >
+                <span>{msg("Set as next", "اجعله التالي")}</span>
+              </button>
             </section>
 
             {/* Run now */}
