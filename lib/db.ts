@@ -69,6 +69,31 @@ export function ensureSchema(): Promise<void> {
           )`
         )
       )
+      .then(() =>
+        pool.query(
+          // One row per user: a daily auto-post schedule that walks the whole Quran.
+          // cursor_surah/cursor_ayah = the next ayah to post; last_run_date guards one
+          // run per local day (also used to claim a run so the minute-ticker can't double-fire).
+          `CREATE TABLE IF NOT EXISTS automation (
+            user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+            enabled BOOLEAN NOT NULL DEFAULT false,
+            run_hour INT NOT NULL DEFAULT 10,
+            run_minute INT NOT NULL DEFAULT 0,
+            reciter TEXT NOT NULL DEFAULT 'alafasy',
+            ayahs_per_day INT NOT NULL DEFAULT 7,
+            frame_tag BOOLEAN NOT NULL DEFAULT true,
+            font TEXT NOT NULL DEFAULT 'amiri',
+            color TEXT NOT NULL DEFAULT 'warm',
+            cursor_surah INT NOT NULL DEFAULT 1,
+            cursor_ayah INT NOT NULL DEFAULT 1,
+            last_run_date DATE,
+            last_status TEXT,
+            last_message TEXT,
+            posts_count INT NOT NULL DEFAULT 0,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+          )`
+        )
+      )
       .then(() => undefined)
       .catch((e) => {
         schemaReady = null; // allow retry on next call
