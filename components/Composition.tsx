@@ -1,6 +1,4 @@
-"use client";
-
-import { useEffect, useState, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import type { Ayah } from "@/lib/quran-data";
 import { toArabicDigits } from "@/lib/quran-data";
 
@@ -17,36 +15,14 @@ export function AyahMark({ n }: { n: number }) {
   );
 }
 
-const MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-
-/** Old-camcorder overlay: a blinking red REC tag (top-left) + an amber date/time stamp
- * (bottom-right), like a Handycam viewfinder. The stamp is the render date, computed
- * client-side (after mount) so there's no SSR hydration mismatch. Sizes in cqw so it
- * scales identically in the live preview and the exported 1080×1920 video. */
+/** The "REC" frame tag (red dot + "1080×1920 · 9:16"), shown top-left. Optional overlay
+ * that can be burned into the exported video; sizes in cqw so it scales preview→export. */
 export function FrameTag() {
-  const [stamp, setStamp] = useState<{ date: string; time: string } | null>(null);
-  useEffect(() => {
-    const d = new Date();
-    const dd = String(d.getDate()).padStart(2, "0");
-    const ampm = d.getHours() >= 12 ? "PM" : "AM";
-    const h = String(d.getHours() % 12 || 12).padStart(2, "0");
-    const min = String(d.getMinutes()).padStart(2, "0");
-    setStamp({ date: `${MONTHS[d.getMonth()]} ${dd} ${d.getFullYear()}`, time: `${ampm} ${h}:${min}` });
-  }, []);
-
   return (
-    <>
-      <div className="frame-tag">
-        <span className="rec" />
-        <span>REC</span>
-      </div>
-      {stamp ? (
-        <div className="frame-date">
-          <span>{stamp.date}</span>
-          <span>{stamp.time}</span>
-        </div>
-      ) : null}
-    </>
+    <div className="frame-tag">
+      <span className="rec" />
+      <span>1080×1920 · 9:16</span>
+    </div>
   );
 }
 
