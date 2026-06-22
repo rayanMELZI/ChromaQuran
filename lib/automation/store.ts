@@ -85,26 +85,30 @@ export interface AutomationPatch {
   cursorAyah?: number;
 }
 
-/** Upsert a config patch; unspecified columns keep their stored value (COALESCE). */
+/** Save a config patch; unspecified columns keep their stored value (COALESCE).
+ * Ensures a default row exists first so a brand-new user's NOT NULL columns get
+ * the table defaults rather than the NULLs of a partial patch. */
 export async function saveAutomation(userId: string, patch: AutomationPatch): Promise<Automation> {
   await ensureSchema();
-  const res = await getPool().query(
-    `INSERT INTO automation
-       (user_id, enabled, run_hour, run_minute, reciter, ayahs_per_day, frame_tag, font, color,
-        cursor_surah, cursor_ayah)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-     ON CONFLICT (user_id) DO UPDATE SET
-       enabled       = COALESCE(EXCLUDED.enabled, automation.enabled),
-       run_hour      = COALESCE(EXCLUDED.run_hour, automation.run_hour),
-       run_minute    = COALESCE(EXCLUDED.run_minute, automation.run_minute),
-       reciter       = COALESCE(EXCLUDED.reciter, automation.reciter),
-       ayahs_per_day = COALESCE(EXCLUDED.ayahs_per_day, automation.ayahs_per_day),
-       frame_tag     = COALESCE(EXCLUDED.frame_tag, automation.frame_tag),
-       font          = COALESCE(EXCLUDED.font, automation.font),
-       color         = COALESCE(EXCLUDED.color, automation.color),
-       cursor_surah  = COALESCE(EXCLUDED.cursor_surah, automation.cursor_surah),
-       cursor_ayah   = COALESCE(EXCLUDED.cursor_ayah, automation.cursor_ayah),
+  const pool = getPool();
+  await pool.query(
+    `INSERT INTO automation (user_id) VALUES ($1) ON CONFLICT (user_id) DO NOTHING`,
+    [userId]
+  );
+  const res = await pool.query(
+    `UPDATE automation SET
+       enabled       = COALESCE($2, enabled),
+       run_hour      = COALESCE($3, run_hour),
+       run_minute    = COALESCE($4, run_minute),
+       reciter       = COALESCE($5, reciter),
+       ayahs_per_day = COALESCE($6, ayahs_per_day),
+       frame_tag     = COALESCE($7, frame_tag),
+       font          = COALESCE($8, font),
+       color         = COALESCE($9, color),
+       cursor_surah  = COALESCE($10, cursor_surah),
+       cursor_ayah   = COALESCE($11, cursor_ayah),
        updated_at    = now()
+     WHERE user_id = $1
      RETURNING ${SELECT}`,
     [
       userId,
