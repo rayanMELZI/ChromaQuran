@@ -68,7 +68,7 @@ export interface ToastItem {
   kind: ToastKind;
 }
 
-export type View = "studio" | "library" | "account";
+export type View = "studio" | "library" | "account" | "automation";
 
 interface StudioContextValue {
   /* language */

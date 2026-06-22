@@ -13,6 +13,7 @@ export const I18N: Record<string, I18nEntry> = {
   brandSub: { en: "Black-canvas Quran video studio", ar: "استوديو فيديوهات القرآن بخلفية سوداء" },
   navStudio: { en: "Studio", ar: "الاستوديو" },
   navLibrary: { en: "Library", ar: "المكتبة" },
+  navAutomation: { en: "Automation", ar: "الأتمتة" },
   navAccount: { en: "Account", ar: "الحساب" },
   openAuto: { en: "Auto Quran", ar: "أوتو قرآن" },
   passage: { en: "Passage", ar: "المقطع" },

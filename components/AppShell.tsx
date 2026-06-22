@@ -5,6 +5,7 @@ import { Background } from "./Background";
 import { AppBar } from "./AppBar";
 import { Studio } from "./Studio";
 import { Library } from "./Library";
+import { Automation } from "./Automation";
 import { Account } from "./Account";
 import { ExportModal } from "./ExportModal";
 import { Toaster } from "./Toaster";
@@ -18,6 +19,7 @@ export function AppShell() {
         <AppBar />
         <Studio />
         <Library />
+        <Automation />
         <Account />
         <div className="footnote">
           {t("footnote")}
