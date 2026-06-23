@@ -1,8 +1,10 @@
 # Deploying ChromaQuran
 
 CI/CD lives on the **`production`** branch. Every push to `production` triggers
-`.github/workflows/deploy.yml`, which SSHes to the server, pulls the branch, writes `.env`
-from GitHub secrets, and runs `docker compose -f docker-compose.prod.yml up -d --build`.
+`.github/workflows/deploy.yml`, which **scp's the source to the server** (packed with
+`git archive`, so only tracked files — no `.git`/`node_modules`/`.env`), writes `.env` from
+GitHub secrets, and runs `docker compose -f docker-compose.prod.yml up -d --build`. The
+Docker image is built on the server; the server needs **no GitHub access / deploy key**.
 
 The stack: a Next.js app container (Playwright/Chromium + ffmpeg for rendering) on
 `127.0.0.1:3003` + its own Postgres. nginx proxies `chroma-quran.rayanemelzi.dev` → `:3003`.
@@ -15,19 +17,15 @@ Settings → Secrets and variables → Actions → New repository secret:
 | `VM_HOST` | server IP / hostname |
 | `VM_USER` | `deploy` |
 | `VM_SSH_KEY` | a private SSH key whose public key is in `deploy`'s `~/.ssh/authorized_keys` |
-| `VM_APP_DIR` | `/home/deploy/chroma-quran` |
+| `VM_APP_DIR` | `/home/deploy/chroma-quran` (a dedicated dir — its contents are replaced each deploy) |
 | `AUTH_JWT_SECRET` | a long random string (e.g. `openssl rand -base64 48`) |
 | `POSTGRES_PASSWORD` | a strong DB password |
 | `AUTOQURAN_API_URL` | *(optional)* defaults to `http://host.docker.internal:5000` |
 
-## 2. One-time server prep (as the `deploy` user)
-1. `deploy` must be in the `docker` group (it already is).
-2. Give `deploy` git access to this **private** repo: add `deploy`'s SSH public key as a
-   **deploy key** on the GitHub repo (Settings → Deploy keys), then clone once:
-   ```bash
-   git clone git@github.com:rayanMELZI/ChromaQuran.git /home/deploy/chroma-quran
-   ```
-   (The workflow also clones automatically if the directory is missing.)
+## 2. One-time server prep
+The only requirement: **`VM_USER` must be in the `docker` group** (the `deploy` user already
+is). The workflow scp's the code in, so the server needs no GitHub credentials/deploy key,
+and you don't have to pre-clone anything.
 
 ## 3. nginx + DNS (subdomain)
 1. DNS: add an A record `chroma-quran.rayanemelzi.dev` → the server IP (or a CNAME to the

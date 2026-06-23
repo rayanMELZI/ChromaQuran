@@ -1,21 +1,20 @@
 name: Deploy to VM
 
-# Deploys the dockerized ChromaQuran stack to the server over SSH and writes .env on the
-# VM from GitHub Secrets (the .env is never committed). Runs on every push to `production`.
+# Ships the source to the server with scp and builds the Docker image there. We pack with
+# `git archive`, so ONLY tracked files are sent (no .git / node_modules / .env) — which means
+# the server needs NO GitHub credentials or deploy key. Runs on every push to `production`.
 #
 # Required repository secrets (Settings -> Secrets and variables -> Actions):
 #   VM_HOST              server IP / hostname
 #   VM_USER              SSH user (e.g. deploy)
 #   VM_SSH_KEY           private SSH key authorized for VM_USER on the server
-#   VM_APP_DIR           absolute path to the checkout on the VM (e.g. /home/deploy/chroma-quran)
+#   VM_APP_DIR           absolute deploy dir on the VM (e.g. /home/deploy/chroma-quran)
 #   AUTH_JWT_SECRET      long random string for signing session JWTs
 #   POSTGRES_PASSWORD    password for the app's Postgres
 #   AUTOQURAN_API_URL    (optional) Auto Quran backend URL reachable from the container
 #                        (defaults to http://host.docker.internal:5000)
 #
-# One-time server prep (as VM_USER): add VM_USER's SSH key to the GitHub repo as a deploy
-# key, then `git clone git@github.com:rayanMELZI/ChromaQuran.git <VM_APP_DIR>` (the workflow
-# also clones if the dir is missing). VM_USER must be in the `docker` group.
+# VM_USER just needs to be in the `docker` group. No git setup on the server.
 
 on:
   workflow_dispatch:
@@ -26,7 +25,21 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy over SSH
+      - uses: actions/checkout@v4
+
+      - name: Pack tracked source
+        run: git archive HEAD | gzip > app.tar.gz
+
+      - name: Copy to the server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          source: app.tar.gz
+          target: /tmp/chroma-quran-deploy
+
+      - name: Unpack, configure & launch
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VM_HOST }}
@@ -37,16 +50,17 @@ jobs:
           script: |
             set -e
             APP_DIR="${{ secrets.VM_APP_DIR }}"
-            if [ ! -d "$APP_DIR/.git" ]; then
-              git clone git@github.com:rayanMELZI/ChromaQuran.git "$APP_DIR"
-            fi
-            cd "$APP_DIR"
-            git fetch --all --prune
-            git checkout production
-            git reset --hard origin/production
+            # safety: never operate on an empty or root path
+            [ -n "$APP_DIR" ] && [ "$APP_DIR" != "/" ] || { echo "VM_APP_DIR is unsafe: '$APP_DIR'"; exit 1; }
 
-            # Recreate .env from injected secrets (umask keeps it private). DATABASE_URL points
-            # at the `db` service on the compose network.
+            mkdir -p "$APP_DIR"
+            # clean the previous checkout (Docker volumes live outside this dir, so renders/DB
+            # survive; .env is rewritten just below), then unpack the freshly-shipped source
+            find "$APP_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+            tar xzf /tmp/chroma-quran-deploy/app.tar.gz -C "$APP_DIR"
+            rm -rf /tmp/chroma-quran-deploy
+
+            cd "$APP_DIR"
             umask 077
             cat > .env <<EOF
             AUTH_JWT_SECRET=${AUTH_JWT_SECRET}
