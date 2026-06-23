@@ -1,0 +1,65 @@
+name: Deploy to VM
+
+# Deploys the dockerized ChromaQuran stack to the server over SSH and writes .env on the
+# VM from GitHub Secrets (the .env is never committed). Runs on every push to `production`.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   VM_HOST              server IP / hostname
+#   VM_USER              SSH user (e.g. deploy)
+#   VM_SSH_KEY           private SSH key authorized for VM_USER on the server
+#   VM_APP_DIR           absolute path to the checkout on the VM (e.g. /home/deploy/chroma-quran)
+#   AUTH_JWT_SECRET      long random string for signing session JWTs
+#   POSTGRES_PASSWORD    password for the app's Postgres
+#   AUTOQURAN_API_URL    (optional) Auto Quran backend URL reachable from the container
+#                        (defaults to http://host.docker.internal:5000)
+#
+# One-time server prep (as VM_USER): add VM_USER's SSH key to the GitHub repo as a deploy
+# key, then `git clone git@github.com:rayanMELZI/ChromaQuran.git <VM_APP_DIR>` (the workflow
+# also clones if the dir is missing). VM_USER must be in the `docker` group.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [production]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          command_timeout: 30m
+          envs: AUTH_JWT_SECRET,POSTGRES_PASSWORD,AUTOQURAN_API_URL
+          script: |
+            set -e
+            APP_DIR="${{ secrets.VM_APP_DIR }}"
+            if [ ! -d "$APP_DIR/.git" ]; then
+              git clone git@github.com:rayanMELZI/ChromaQuran.git "$APP_DIR"
+            fi
+            cd "$APP_DIR"
+            git fetch --all --prune
+            git checkout production
+            git reset --hard origin/production
+
+            # Recreate .env from injected secrets (umask keeps it private). DATABASE_URL points
+            # at the `db` service on the compose network.
+            umask 077
+            cat > .env <<EOF
+            AUTH_JWT_SECRET=${AUTH_JWT_SECRET}
+            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            DATABASE_URL=postgres://chromaquran:${POSTGRES_PASSWORD}@db:5432/chromaquran
+            AUTOQURAN_API_URL=${AUTOQURAN_API_URL:-http://host.docker.internal:5000}
+            NODE_ENV=production
+            EOF
+
+            docker compose -f docker-compose.prod.yml up -d --build
+            docker image prune -f
+            docker compose -f docker-compose.prod.yml ps
+        env:
+          AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          AUTOQURAN_API_URL: ${{ secrets.AUTOQURAN_API_URL }}
