@@ -1,20 +1,24 @@
 name: Deploy to VM
 
-# Ships the source to the server with scp and builds the Docker image there. We pack with
-# `git archive`, so ONLY tracked files are sent (no .git / node_modules / .env) — which means
-# the server needs NO GitHub credentials or deploy key. Runs on every push to `production`.
+# The server's SSH is NOT public — it's behind Cloudflare Access (Zero Trust tunnel), reached
+# locally via `ProxyCommand cloudflared access ssh --hostname %h`. So this workflow installs
+# cloudflared and connects through it using a Cloudflare Access SERVICE TOKEN (non-interactive).
+# It ships only tracked files (git archive: no .git/node_modules/.env) and builds on the server.
 #
 # Required repository secrets (Settings -> Secrets and variables -> Actions):
-#   VM_HOST              server IP / hostname
-#   VM_USER              SSH user (e.g. deploy)
-#   VM_SSH_KEY           private SSH key authorized for VM_USER on the server
-#   VM_APP_DIR           absolute deploy dir on the VM (e.g. /home/deploy/chroma-quran)
-#   AUTH_JWT_SECRET      long random string for signing session JWTs
-#   POSTGRES_PASSWORD    password for the app's Postgres
-#   AUTOQURAN_API_URL    (optional) Auto Quran backend URL reachable from the container
-#                        (defaults to http://host.docker.internal:5000)
+#   VM_HOST                 the Access SSH hostname (e.g. nanovm.rayanemelzi.dev)
+#   VM_USER                 SSH user on the server (e.g. deploy)
+#   VM_SSH_KEY              private SSH key authorized for VM_USER on the server
+#   VM_APP_DIR              deploy dir on the VM (e.g. /home/deploy/chroma-quran)
+#   CF_ACCESS_CLIENT_ID     Cloudflare Access service token Client ID
+#   CF_ACCESS_CLIENT_SECRET Cloudflare Access service token Client Secret
+#   AUTH_JWT_SECRET         long random string for signing session JWTs
+#   POSTGRES_PASSWORD       password for the app's Postgres
+#   AUTOQURAN_API_URL       (optional) defaults to http://host.docker.internal:5000
 #
-# VM_USER just needs to be in the `docker` group. No git setup on the server.
+# Cloudflare prep: create a service token (Zero Trust -> Access -> Service Auth -> Service
+# Tokens) and add it to the SSH Access application's policy (Action: Service Auth). VM_USER
+# only needs to be in the `docker` group on the server.
 
 on:
   workflow_dispatch:
@@ -27,53 +31,64 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Pack tracked source
-        run: git archive HEAD | gzip > app.tar.gz
-
-      - name: Copy to the server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          source: app.tar.gz
-          target: /tmp/chroma-quran-deploy
-
-      - name: Unpack, configure & launch
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          command_timeout: 30m
-          envs: AUTH_JWT_SECRET,POSTGRES_PASSWORD,AUTOQURAN_API_URL
-          script: |
-            set -e
-            APP_DIR="${{ secrets.VM_APP_DIR }}"
-            # safety: never operate on an empty or root path
-            [ -n "$APP_DIR" ] && [ "$APP_DIR" != "/" ] || { echo "VM_APP_DIR is unsafe: '$APP_DIR'"; exit 1; }
-
-            mkdir -p "$APP_DIR"
-            # clean the previous checkout (Docker volumes live outside this dir, so renders/DB
-            # survive; .env is rewritten just below), then unpack the freshly-shipped source
-            find "$APP_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-            tar xzf /tmp/chroma-quran-deploy/app.tar.gz -C "$APP_DIR"
-            rm -rf /tmp/chroma-quran-deploy
-
-            cd "$APP_DIR"
-            umask 077
-            cat > .env <<EOF
-            AUTH_JWT_SECRET=${AUTH_JWT_SECRET}
-            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-            DATABASE_URL=postgres://chromaquran:${POSTGRES_PASSWORD}@db:5432/chromaquran
-            AUTOQURAN_API_URL=${AUTOQURAN_API_URL:-http://host.docker.internal:5000}
-            NODE_ENV=production
-            EOF
-
-            docker compose -f docker-compose.prod.yml up -d --build
-            docker image prune -f
-            docker compose -f docker-compose.prod.yml ps
+      - name: Build .env and source archive
         env:
           AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           AUTOQURAN_API_URL: ${{ secrets.AUTOQURAN_API_URL }}
+        run: |
+          umask 077
+          cat > deploy.env <<EOF
+          AUTH_JWT_SECRET=${AUTH_JWT_SECRET}
+          POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+          DATABASE_URL=postgres://chromaquran:${POSTGRES_PASSWORD}@db:5432/chromaquran
+          AUTOQURAN_API_URL=${AUTOQURAN_API_URL:-http://host.docker.internal:5000}
+          NODE_ENV=production
+          EOF
+          git archive HEAD | gzip > app.tar.gz
+
+      - name: Configure cloudflared + SSH
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_SSH_KEY: ${{ secrets.VM_SSH_KEY }}
+        run: |
+          sudo curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+          sudo chmod +x /usr/local/bin/cloudflared
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "$VM_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          # The service token is read from TUNNEL_SERVICE_TOKEN_ID/SECRET env (set in the next
+          # step), so it never lands in this config file.
+          cat > ~/.ssh/config <<EOF
+          Host vm
+            HostName ${VM_HOST}
+            User ${VM_USER}
+            IdentityFile ~/.ssh/id_deploy
+            StrictHostKeyChecking no
+            UserKnownHostsFile /dev/null
+            ProxyCommand cloudflared access ssh --hostname %h
+          EOF
+          chmod 600 ~/.ssh/config
+
+      - name: Ship & deploy
+        env:
+          APP_DIR: ${{ secrets.VM_APP_DIR }}
+          TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          scp app.tar.gz deploy.env vm:/tmp/
+          ssh vm APP_DIR="$APP_DIR" 'bash -s' <<'REMOTE'
+          set -e
+          [ -n "$APP_DIR" ] && [ "$APP_DIR" != "/" ] || { echo "VM_APP_DIR is unsafe: '$APP_DIR'"; exit 1; }
+          mkdir -p "$APP_DIR"
+          # clean previous checkout (Docker volumes live outside this dir, so renders/DB survive)
+          find "$APP_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+          tar xzf /tmp/app.tar.gz -C "$APP_DIR"
+          install -m 600 /tmp/deploy.env "$APP_DIR/.env"
+          rm -f /tmp/app.tar.gz /tmp/deploy.env
+          cd "$APP_DIR"
+          docker compose -f docker-compose.prod.yml up -d --build
+          docker image prune -f
+          docker compose -f docker-compose.prod.yml ps
+          REMOTE
