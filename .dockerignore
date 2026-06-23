@@ -1,0 +1,11 @@
+node_modules
+.next
+/renders
+.git
+.github
+.env
+.env*.local
+*.md
+CLAUDE.md
+npm-debug.log*
+.DS_Store

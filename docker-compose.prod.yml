@@ -1,0 +1,63 @@
+# Production stack for ChromaQuran. Deployed by .github/workflows/deploy.yml, which writes
+# the .env this file reads. nginx on the host proxies chroma-quran.rayanemelzi.dev -> 127.0.0.1:3003.
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chromaquran-app
+    container_name: chromaquran-app
+    restart: always
+    env_file: .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      # the render worker loads /render from the app itself (inside the container)
+      - CQ_SELF_ORIGIN=http://127.0.0.1:3000
+      # Chromium runs as root in the container -> needs --no-sandbox
+      - CQ_CHROMIUM_ARGS=--no-sandbox --disable-setuid-sandbox
+    ports:
+      # bind to localhost only; nginx is the public entrypoint
+      - "127.0.0.1:3003:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    # reach the Auto Quran backend running on the host (:5000) for "Share to Instagram"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - cq_renders:/app/renders
+    security_opt:
+      - no-new-privileges:true
+    networks: [cq-net]
+    logging:
+      driver: "json-file"
+      options: { max-size: "10m", max-file: "3" }
+
+  db:
+    image: postgres:16-alpine
+    container_name: chromaquran-db-prod
+    restart: always
+    environment:
+      POSTGRES_USER: chromaquran
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: chromaquran
+    volumes:
+      - cq_pgdata_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chromaquran"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [cq-net]
+    logging:
+      driver: "json-file"
+      options: { max-size: "10m", max-file: "3" }
+
+networks:
+  cq-net:
+    driver: bridge
+
+volumes:
+  cq_pgdata_prod:
+  cq_renders:
