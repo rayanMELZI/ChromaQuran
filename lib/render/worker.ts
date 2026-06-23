@@ -38,7 +38,10 @@ export const RENDERS_DIR = path.join(process.cwd(), "renders");
 let browserPromise: Promise<Browser> | null = null;
 function getBrowser(): Promise<Browser> {
   if (!browserPromise) {
-    browserPromise = chromium.launch({ headless: true }).catch((e) => {
+    // In a container (Chromium as root) we need --no-sandbox; pass it via env so local
+    // dev launches with the default sandbox. e.g. CQ_CHROMIUM_ARGS="--no-sandbox --disable-setuid-sandbox"
+    const args = process.env.CQ_CHROMIUM_ARGS ? process.env.CQ_CHROMIUM_ARGS.split(/\s+/).filter(Boolean) : [];
+    browserPromise = chromium.launch({ headless: true, args }).catch((e) => {
       browserPromise = null;
       throw e;
     });
