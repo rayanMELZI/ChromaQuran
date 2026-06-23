@@ -6,9 +6,11 @@ FROM node:22-bookworm-slim AS base
 WORKDIR /app
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# ---- build (needs devDeps: typescript, tailwind, etc.) ----
+# ---- build ----
+# NOTE: do NOT set NODE_ENV=development here. `npm ci` installs devDeps anyway (the Node base
+# leaves NODE_ENV unset), and NODE_ENV=development makes `next build` prerender in dev mode,
+# which crashes the error pages on Linux ("useContext null").
 FROM base AS build
-ENV NODE_ENV=development
 # don't download any browsers during npm install — only Chromium is installed in the runtime
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 COPY package.json package-lock.json ./
