@@ -1,15 +1,16 @@
-# ChromaQuran production image: Next.js app + Playwright(Chromium) + ffmpeg for rendering.
-# Built on the official Playwright image so Chromium and its system deps are already present
-# (the render worker screenshots the /render page at 1080x1920). ffmpeg comes from the
-# ffmpeg-static npm package. Pin the image to the playwright npm version in package.json.
-FROM mcr.microsoft.com/playwright:v1.61.0-noble AS base
+# ChromaQuran production image: Next.js app + Chromium (Playwright) + ffmpeg for rendering.
+# Uses a slim Node base and installs ONLY Chromium (not Firefox/WebKit) to keep the image
+# small. ffmpeg comes from the ffmpeg-static npm package. Pin Chromium via the playwright
+# npm version in package.json (npm ci installs it; `playwright install chromium` matches it).
+FROM node:22-bookworm-slim AS base
 WORKDIR /app
-# Chromium already lives in the image (/ms-playwright) — don't re-download it on npm install.
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 # ---- build (needs devDeps: typescript, tailwind, etc.) ----
 FROM base AS build
 ENV NODE_ENV=development
+# don't download any browsers during npm install — only Chromium is installed in the runtime
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
@@ -24,7 +25,8 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/next.config.ts ./next.config.ts
-RUN mkdir -p renders
+# install ONLY Chromium + its OS libraries (far smaller than the full multi-browser image)
+RUN npx playwright install --with-deps chromium && rm -rf /var/lib/apt/lists/* && mkdir -p renders
 EXPOSE 3000
 # Chromium runs as root here -> needs --no-sandbox (set via compose: CQ_CHROMIUM_ARGS).
 CMD ["npm", "run", "start", "--", "-p", "3000", "-H", "0.0.0.0"]
