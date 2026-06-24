@@ -25,6 +25,11 @@ on:
   push:
     branches: [production]
 
+# never let two deploys build on the small VM at once
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
