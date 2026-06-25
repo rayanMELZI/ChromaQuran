@@ -46,7 +46,11 @@ jobs:
           cat > deploy.env <<EOF
           AUTH_JWT_SECRET=${AUTH_JWT_SECRET}
           POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-          DATABASE_URL=postgres://chromaquran:${POSTGRES_PASSWORD}@db:5432/chromaquran
+          PGHOST=db
+          PGPORT=5432
+          PGUSER=chromaquran
+          PGPASSWORD=${POSTGRES_PASSWORD}
+          PGDATABASE=chromaquran
           AUTOQURAN_API_URL=${AUTOQURAN_API_URL:-http://host.docker.internal:5000}
           NODE_ENV=production
           EOF

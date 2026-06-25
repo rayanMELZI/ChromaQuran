@@ -1,4 +1,4 @@
-/* Postgres connection + schema (server-only). Shared with Auto Quran via DATABASE_URL. */
+/* Postgres connection + schema (server-only). Shared with Auto Quran via the same DB. */
 import { Pool } from "pg";
 
 let pool: Pool | null = null;
@@ -6,8 +6,13 @@ let pool: Pool | null = null;
 export function getPool(): Pool {
   if (!pool) {
     const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) throw new Error("DATABASE_URL is not set");
-    pool = new Pool({ connectionString, max: 5 });
+    // Prefer DATABASE_URL (local dev). In production we use the individual PG* env vars
+    // (PGHOST/PGPORT/PGUSER/PGPASSWORD/PGDATABASE), which node-postgres reads automatically —
+    // this avoids URL-encoding a password that contains characters like @ ? # / : in a URL.
+    if (!connectionString && !process.env.PGHOST) {
+      throw new Error("Set DATABASE_URL, or PGHOST/PGPASSWORD/PGDATABASE");
+    }
+    pool = new Pool(connectionString ? { connectionString, max: 5 } : { max: 5 });
   }
   return pool;
 }
