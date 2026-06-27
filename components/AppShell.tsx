@@ -7,6 +7,7 @@ import { Studio } from "./Studio";
 import { Library } from "./Library";
 import { Automation } from "./Automation";
 import { Account } from "./Account";
+import { Pipeline } from "./Pipeline";
 import { ExportModal } from "./ExportModal";
 import { Toaster } from "./Toaster";
 
@@ -21,6 +22,7 @@ export function AppShell() {
         <Library />
         <Automation />
         <Account />
+        <Pipeline />
         <div className="footnote">
           {t("footnote")}
           {" · "}
