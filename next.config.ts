@@ -6,16 +6,9 @@ const nextConfig: NextConfig = {
   // Hide the dev-mode indicator badge — otherwise the headless render screenshots it
   // into the bottom-left of exported frames in `next dev`.
   devIndicators: false,
-  // Proxy /api/pipeline/* → Auto Quran Flask backend (server-side, no CORS issues).
-  // Set AUTOQURAN_API_URL in .env.local; defaults to the Flask dev port.
-  async rewrites() {
-    return [
-      {
-        source: "/api/pipeline/:path*",
-        destination: `${process.env.AUTOQURAN_API_URL ?? "http://localhost:5000"}/api/:path*`,
-      },
-    ];
-  },
+  // NOTE: /api/pipeline/* is proxied to Auto Quran by a RUNTIME route handler
+  // (app/api/pipeline/[...path]/route.ts), NOT a build-time rewrite — a rewrite bakes
+  // AUTOQURAN_API_URL at build time, which is wrong inside the Docker image.
 };
 
 export default nextConfig;
