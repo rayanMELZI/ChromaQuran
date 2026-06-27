@@ -15,6 +15,7 @@ export const I18N: Record<string, I18nEntry> = {
   navLibrary: { en: "Library", ar: "المكتبة" },
   navAutomation: { en: "Automation", ar: "الأتمتة" },
   navAccount: { en: "Account", ar: "الحساب" },
+  navPipeline: { en: "Pipeline", ar: "خط الإنتاج" },
   openAuto: { en: "Auto Quran", ar: "أوتو قرآن" },
   passage: { en: "Passage", ar: "المقطع" },
   passageHint: { en: "Surah & verses", ar: "السورة والآيات" },

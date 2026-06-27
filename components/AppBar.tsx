@@ -44,6 +44,18 @@ const NAV: { view: View; key: string; icon: React.ReactNode }[] = [
       </svg>
     ),
   },
+  {
+    view: "pipeline",
+    key: "navPipeline",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none">
+        <circle cx="5" cy="12" r="2" stroke="currentColor" strokeWidth="1.7" />
+        <circle cx="12" cy="12" r="2" stroke="currentColor" strokeWidth="1.7" />
+        <circle cx="19" cy="12" r="2" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M7 12h3M14 12h3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    ),
+  },
 ];
 
 export function AppBar() {
